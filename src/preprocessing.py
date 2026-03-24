@@ -21,3 +21,8 @@ def extract_features(file_path):
     except Exception as e:
         print(f"Erreur lors du traitement de {file_path} : {e}")
         return None
+    
+    
+if __name__ == "__main__":
+    # Test rapide
+    features = extract_features("test_audio.wav")

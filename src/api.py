@@ -4,12 +4,43 @@ import tensorflow as tf
 import shutil
 import os
 
-from preprocessing import extract_features
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+import librosa
+import numpy as np
+
+def extract_features(file_path):
+    """
+    Extraire les features MFCC (13,) à partir d’un fichier audio
+    ⚠️ IDENTIQUE au training (très important)
+    """
+    try:
+        # charger audio (30 secondes max)
+        audio, sr = librosa.load(file_path, duration=30)
+
+        # extraire MFCC
+        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
+
+        # moyenne sur le temps → shape (13,)
+        mfcc_mean = np.mean(mfcc.T, axis=0)
+
+        return mfcc_mean
+
+    except Exception as e:
+        print(f"Erreur lors du traitement de {file_path} : {e}")
+        return None
+    
+    
+#if __name__ == "__main__":
+#    # Test rapide
+#    features = extract_features("test_audio.wav")
 
 app = FastAPI()
 
 # Charger le modèle une seule fois au démarrage
-model = tf.keras.models.load_model("model/model_genre_music.h5")
+model = tf.keras.models.load_model(
+    os.path.join(os.path.dirname(__file__), "..", "model", "model_genre_music.h5")
+)
 
 classes = ["andalusian", "chaabi", "gnawa", "imazighn", "rai", "rap"]
 
