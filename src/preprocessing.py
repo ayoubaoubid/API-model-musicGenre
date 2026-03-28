@@ -3,25 +3,6 @@ import librosa
 import numpy as np
 import pandas as pd
 
-dataset_path = "../music_dataset/MoroccanMusic"
-
-# 🔹 1. Nettoyage des fichiers corrompus
-for genre in os.listdir(dataset_path):
-    genre_path = os.path.join(dataset_path, genre)
-    
-    if not os.path.isdir(genre_path):
-        continue
-
-
-    for file in os.listdir(genre_path):
-        file_path = os.path.join(genre_path, file)
-
-        try:
-            y, sr = librosa.load(file_path)
-        except:
-            print("File corrompu supprimé :", file_path)
-            os.remove(file_path)
-
 # 🔹 2. Extraction des MFCC (128 coefficients)
 def extract_features(file):
     try:
