@@ -9,37 +9,13 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import librosa
 import numpy as np
 
-def extract_features(file_path):
-    """
-    Extraire les features MFCC (13,) à partir d’un fichier audio
-    ⚠️ IDENTIQUE au training (très important)
-    """
-    try:
-        # charger audio (30 secondes max)
-        audio, sr = librosa.load(file_path, duration=30)
-
-        # extraire MFCC
-        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
-
-        # moyenne sur le temps → shape (13,)
-        mfcc_mean = np.mean(mfcc.T, axis=0)
-
-        return mfcc_mean
-
-    except Exception as e:
-        print(f"Erreur lors du traitement de {file_path} : {e}")
-        return None
-    
-    
-#if __name__ == "__main__":
-#    # Test rapide
-#    features = extract_features("test_audio.wav")
+from preprocessing import extract_features
 
 app = FastAPI()
 
 # Charger le modèle une seule fois au démarrage
 model = tf.keras.models.load_model(
-    os.path.join(os.path.dirname(__file__), "..", "model", "model_genre_music.h5")
+    os.path.join(os.path.dirname(__file__), "..", "model", "music_modele.keras")
 )
 
 classes = ["andalusian", "chaabi", "gnawa", "imazighn", "rai", "rap"]
@@ -51,8 +27,7 @@ def home():
 
 
 @app.post("/predict")
-
-async def predict(file: UploadFile = File(...)):
+async def predict(file: UploadFile = File(...)) :
     
     # Sauvegarde temporaire
     temp_file = f"temp_{file.filename}"
@@ -67,19 +42,19 @@ async def predict(file: UploadFile = File(...)):
         if features is None:
             return {"error": "Erreur lors du traitement audio"}
 
+        features = features.reshape(-1, 128, 1)
+        features = np.expand_dims(features, axis=0) 
+        
         # reshape pour le modèle → (1, 13)
-        features = np.array(features)
-        features = features[np.newaxis, :]
+        #features = np.array(features)
+        #features = features[np.newaxis, :]
 
         # Prédiction
         prediction = model.predict(features)
         predicted_class = classes[np.argmax(prediction)]
-        confidence = float(np.max(prediction))
+        
 
-        return {
-            "prediction": predicted_class,
-            "confidence": confidence
-        }
+        return predicted_class
 
     except Exception as e:
         return {"error": str(e)}

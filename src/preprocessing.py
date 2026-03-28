@@ -1,28 +1,53 @@
+import os
 import librosa
 import numpy as np
+import pandas as pd
 
-def extract_features(file_path):
-    """
-    Extraire les features MFCC (13,) à partir d’un fichier audio
-    ⚠️ IDENTIQUE au training (très important)
-    """
+dataset_path = "../music_dataset/MoroccanMusic"
+
+# 🔹 1. Nettoyage des fichiers corrompus
+for genre in os.listdir(dataset_path):
+    genre_path = os.path.join(dataset_path, genre)
+    
+    if not os.path.isdir(genre_path):
+        continue
+
+
+    for file in os.listdir(genre_path):
+        file_path = os.path.join(genre_path, file)
+
+        try:
+            y, sr = librosa.load(file_path)
+        except:
+            print("File corrompu supprimé :", file_path)
+            os.remove(file_path)
+
+# 🔹 2. Extraction des MFCC (128 coefficients)
+def extract_features(file):
     try:
-        # charger audio (30 secondes max)
-        audio, sr = librosa.load(file_path, duration=30)
-
-        # extraire MFCC
-        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
-
-        # moyenne sur le temps → shape (13,)
-        mfcc_mean = np.mean(mfcc.T, axis=0)
-
-        return mfcc_mean
-
+        audio, sr = librosa.load(file, duration=30)
+        
+        mfcc = librosa.feature.mfcc(
+            y=audio,
+            sr=sr,
+            n_mfcc=128  
+        )  # shape = (128, T) où T dépend de la durée
+        
+        # 🔹 Ajuster à 128 frames (padding ou découpage)
+        if mfcc.shape[1] < 128:
+            pad_width = 128 - mfcc.shape[1]
+            mfcc = np.pad(mfcc, ((0,0),(0,pad_width)), mode='constant')
+        else:
+            mfcc = mfcc[:, :128]
+        
+        # 🔹 Reshape en (128,128,1) pour Conv2D
+        mfcc = mfcc.reshape(128,128,1)
+        
+        return mfcc
+    
     except Exception as e:
-        print(f"Erreur lors du traitement de {file_path} : {e}")
+        print("Erreur sur fichier :", file, e)
         return None
-    
-    
-if __name__ == "__main__":
-    # Test rapide
-    features = extract_features("test_audio.wav")
+
+
+
