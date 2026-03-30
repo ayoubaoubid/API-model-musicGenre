@@ -1,30 +1,31 @@
-# Image de base légère
+# Image de base légère avec Python
 FROM python:3.10-slim
 
-# Éviter fichiers inutiles
+# Variables d’environnement
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Installer dépendances système (IMPORTANT pour librosa)
+# Installer dépendances système (IMPORTANT pour librosa & soundfile)
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
+    build-essential \
     libsndfile1 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Créer dossier app
+# Définir le dossier de travail
 WORKDIR /app
 
-# Copier requirements d'abord (optimisation cache)
+# Copier les fichiers requirements
 COPY requirements.txt .
 
-# Installer dépendances Python
+# Installer les dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier le reste du projet
+# Copier tout le projet
 COPY . .
 
-# Exposer le port
+# Exposer le port FastAPI
 EXPOSE 8000
 
-# Lancer API
-CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Commande pour lancer l'API
+CMD ["uvicorn", "src.api:app", "--host", "127.0.0.1", "--port", "8000"]
