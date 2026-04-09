@@ -1,31 +1,24 @@
-# Image de base légère avec Python
-FROM python:3.10-slim
+# image de base
+FROM python:3.10
 
-# Variables d’environnement
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Installer dépendances système (IMPORTANT pour librosa & soundfile)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libsndfile1 \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Définir le dossier de travail
+# dossier de travail
 WORKDIR /app
 
-# Copier les fichiers requirements
+# Mettre à jour pip en premier
+#RUN pip install --default-timeout=1000 --retries=10 --upgrade pip
+RUN pip install --upgrade pip
+
+# 1. Copier UNIQUEMENT le requirements.txt d'abord (pour profiter du cache Docker)
 COPY requirements.txt .
 
-# Installer les dépendances Python
-RUN pip install --no-cache-dir -r requirements.txt
+# 2. Installer dépendances avec un timeout rallongé
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 
-# Copier tout le projet
+# 3. Copier le reste des fichiers du projet APRES l'installation
 COPY . .
 
-# Exposer le port FastAPI
+# exposer port
 EXPOSE 8000
 
-# Commande pour lancer l'API
+# lancer API (ATTENTION: host 0.0.0.0 est obligatoire dans Docker)
 CMD ["uvicorn", "src.api:app", "--host", "127.0.0.1", "--port", "8000"]
